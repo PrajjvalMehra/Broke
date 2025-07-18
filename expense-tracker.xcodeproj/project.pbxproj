@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1A4E4BC62E25B79600E6EAC8 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 1A4E4BC52E25B79600E6EAC8 /* Auth */; };
+		1A4E4BC82E25B79600E6EAC8 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 1A4E4BC72E25B79600E6EAC8 /* Functions */; };
+		1A4E4BCA2E25B79600E6EAC8 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 1A4E4BC92E25B79600E6EAC8 /* PostgREST */; };
+		1A4E4BCC2E25B79600E6EAC8 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 1A4E4BCB2E25B79600E6EAC8 /* Storage */; };
+		1A4E4BCE2E25B79600E6EAC8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 1A4E4BCD2E25B79600E6EAC8 /* Supabase */; };
+		1A4E4BD02E25B7BB00E6EAC8 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A4E4BCF2E25B7B200E6EAC8 /* Supabase.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1A46BAB92E22A62600082DA2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,11 +36,25 @@
 		1A46BAA82E22A62400082DA2 /* expense-tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "expense-tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A46BAB82E22A62600082DA2 /* expense-trackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "expense-trackerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A46BAC22E22A62600082DA2 /* expense-trackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "expense-trackerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A4E4BCF2E25B7B200E6EAC8 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supabase.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1A4E4BD52E25BF1D00E6EAC8 /* Exceptions for "expense-tracker" folder in "expense-tracker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1A46BAA72E22A62400082DA2 /* expense-tracker */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A46BAAA2E22A62400082DA2 /* expense-tracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1A4E4BD52E25BF1D00E6EAC8 /* Exceptions for "expense-tracker" folder in "expense-tracker" target */,
+			);
 			path = "expense-tracker";
 			sourceTree = "<group>";
 		};
@@ -52,6 +75,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A4E4BCE2E25B79600E6EAC8 /* Supabase in Frameworks */,
+				1A4E4BCC2E25B79600E6EAC8 /* Storage in Frameworks */,
+				1A4E4BCA2E25B79600E6EAC8 /* PostgREST in Frameworks */,
+				1A4E4BC82E25B79600E6EAC8 /* Functions in Frameworks */,
+				1A4E4BC62E25B79600E6EAC8 /* Auth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +103,7 @@
 		1A46BA9F2E22A62400082DA2 = {
 			isa = PBXGroup;
 			children = (
+				1A4E4BCF2E25B7B200E6EAC8 /* Supabase.swift */,
 				1A46BAAA2E22A62400082DA2 /* expense-tracker */,
 				1A46BABB2E22A62600082DA2 /* expense-trackerTests */,
 				1A46BAC52E22A62600082DA2 /* expense-trackerUITests */,
@@ -112,6 +141,11 @@
 			);
 			name = "expense-tracker";
 			packageProductDependencies = (
+				1A4E4BC52E25B79600E6EAC8 /* Auth */,
+				1A4E4BC72E25B79600E6EAC8 /* Functions */,
+				1A4E4BC92E25B79600E6EAC8 /* PostgREST */,
+				1A4E4BCB2E25B79600E6EAC8 /* Storage */,
+				1A4E4BCD2E25B79600E6EAC8 /* Supabase */,
 			);
 			productName = "expense-tracker";
 			productReference = 1A46BAA82E22A62400082DA2 /* expense-tracker.app */;
@@ -195,6 +229,9 @@
 			);
 			mainGroup = 1A46BA9F2E22A62400082DA2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A46BAA92E22A62400082DA2 /* Products */;
 			projectDirPath = "";
@@ -236,6 +273,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A4E4BD02E25B7BB00E6EAC8 /* Supabase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -393,11 +431,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "expense-tracker/expense-tracker.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"expense-tracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 4RJVKU9DGQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "expense-tracker/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -421,11 +462,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "expense-tracker/expense-tracker.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"expense-tracker/Preview Content\"";
+				DEVELOPMENT_TEAM = 4RJVKU9DGQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "expense-tracker/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -552,6 +596,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A4E4BC52E25B79600E6EAC8 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		1A4E4BC72E25B79600E6EAC8 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		1A4E4BC92E25B79600E6EAC8 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		1A4E4BCB2E25B79600E6EAC8 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		1A4E4BCD2E25B79600E6EAC8 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A4E4BC42E25B79600E6EAC8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A46BAA02E22A62400082DA2 /* Project object */;
 }
