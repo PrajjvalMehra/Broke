@@ -1,21 +1,6 @@
 import SwiftUI
 import Charts
 import Foundation
-import UIKit
-
-extension UIView {
-    var recursiveSubviews: [UIView] {
-        return subviews + subviews.flatMap { $0.recursiveSubviews }
-    }
-}
-
-struct ViewSizeKey: PreferenceKey {
-    static var defaultValue: [CGSize] = []
-    
-    static func reduce(value: inout [CGSize], nextValue: () -> [CGSize]) {
-        value.append(contentsOf: nextValue())
-    }
-}
 
 struct HistoryView: View {
     @State private var expenses: [UserExpense] = []
@@ -23,6 +8,7 @@ struct HistoryView: View {
     @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
     @State private var viewType: ViewType = .weekly
+    @State private var animateChart = false
     
     enum ViewType {
         case weekly
@@ -132,7 +118,6 @@ struct HistoryView: View {
         }
     }
 
-    // Filter expenses for the current view (week or month)
     private var filteredExpenses: [UserExpense] {
         let calendar = Calendar.current
         let now = Date()
@@ -167,7 +152,7 @@ struct HistoryView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.2)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color(.systemBackground)
                 .ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -182,9 +167,8 @@ struct HistoryView: View {
                 VStack(spacing: 10) {
                     if isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
+                            .progressViewStyle(CircularProgressViewStyle(tint: .primary))
                             .scaleEffect(1.2)
-                            .tint(.blue)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.top, 40)
                         Spacer()
@@ -193,7 +177,7 @@ struct HistoryView: View {
                             .foregroundColor(.red)
                     } else if expenses.isEmpty {
                         Text("No expenses yet.")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                     } else {
                         let filledTotals = fillEmptyPeriods(dailyTotals, viewType: viewType)
                         let total: Float = {
@@ -204,9 +188,7 @@ struct HistoryView: View {
                                 return filledTotals.last?.total ?? 0
                             }
                         }()
-                        // align to the left of the screen
                         HStack(alignment: .top) {
-                            // Dropdown menu on the left, aligned with header
                             Menu {
                                 Button(action: { viewType = .weekly }) {
                                     HStack {
@@ -228,94 +210,67 @@ struct HistoryView: View {
                                 HStack(spacing: 6) {
                                     Text(viewType == .weekly ? "Weekly" : "Monthly")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.primary)
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.primary)
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 12)
-                                .background(LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.15), Color.purple.opacity(0.15)]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .background(Color(.secondarySystemBackground))
                                 .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
                             }
-                            // Remove left padding
                             .padding(.leading, 0)
                             Spacer()
-                            // Total and period on the right
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text("Total")
                                     .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.secondary)
                                 Text("$\(total, specifier: "%.2f")")
-                                    .font(.system(size: 36, weight: .bold))
-                                    .foregroundColor(.blue)
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundColor(.primary)
                                 Text(periodString(start: filledTotals.first?.date, end: filledTotals.last?.date))
                                     .font(.subheadline)
-                                    .foregroundColor(.purple)
-                                    .padding(.trailing, 0) // Remove right padding
+                                    .foregroundColor(.secondary)
+                                    .padding(.trailing, 0)
                             }
                         }
-                        .padding(.bottom, 8)
-                        Chart {
-                            ForEach(filledTotals, id: \.date) { period in
-                                BarMark(
-                                    x: .value("Period", formattedPeriodLabel(period.date, viewType: viewType)),
-                                    y: .value("Total", period.total)
-                                )
-                                .foregroundStyle(LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ))
+                        .padding(.horizontal)
+                        .padding(.bottom, 4)
+                        ExpenseChartView(
+                            filledTotals: filledTotals,
+                            viewType: viewType,
+                            animateChart: animateChart,
+                            formattedPeriodLabel: formattedPeriodLabel
+                        )
+                        .onAppear {
+                            animateChart = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                withAnimation(.easeOut(duration: 0.15)) {
+                                    animateChart = true
+                                }
                             }
                         }
-                        .chartXAxis {
-                            AxisMarks(values: .automatic) { _ in
-                                AxisValueLabel()
-                                    .font(.caption)
-                            }
-                        }
-                        .frame(height: 200)
-                        .frame(width: nil)
-                        .padding(.bottom)
-                        List(filteredExpenses, id: \.created_at) { expense in
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(expense.expense_name)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                        .lineLimit(1)
-                                    HStack(spacing: 6) {
-                                        Text(expense.category)
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                        Text("•")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(.gray)
-                                        Text(formattedDate(String(expense.created_at.prefix(10)), showYear: true))
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
+                        .onChange(of: isLoading) { _, _ in
+                            if !isLoading {
+                                animateChart = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        animateChart = true
                                     }
                                 }
-                                Spacer()
-                                Text("$\(expense.expense, specifier: "%.2f")")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.blue)
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 8)
-                            .background(LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.12), Color.purple.opacity(0.12)]), startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .cornerRadius(10)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-                            .listRowSeparator(.hidden)
                         }
-                        .listStyle(PlainListStyle())
-                        .scrollIndicators(.hidden)
-                        .environment(\.defaultMinListRowHeight, 0)
+                        ExpenseListView(
+                            filteredExpenses: filteredExpenses,
+                            formattedDate: formattedDate
+                        )
                     }
                 }
-                .padding()
             }
         }
         .onAppear {
@@ -332,26 +287,4 @@ struct HistoryView: View {
             }
         }
     }
-}
-
-func groupExpensesByDay(_ expenses: [UserExpense]) -> [(date: String, total: Float)] {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd"
-    formatter.timeZone = TimeZone.current // Use device's timezone
-    let utcFormatter = ISO8601DateFormatter()
-    utcFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    utcFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
-    let grouped = Dictionary(grouping: expenses) { expense in
-        // Try to parse the UTC date string and convert to local date string
-        if let utcDate = utcFormatter.date(from: expense.created_at) {
-            return formatter.string(from: utcDate)
-        } else {
-            // fallback: just use the first 10 chars
-            return String(expense.created_at.prefix(10))
-        }
-    }
-    return grouped.map { (date, items) in
-        (date: date, total: items.reduce(0) { $0 + $1.expense })
-    }.sorted { $0.date < $1.date }
 }

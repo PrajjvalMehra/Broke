@@ -24,3 +24,40 @@ func addExpense(expense: Double, uid: String, category: String, expenseName: Str
     let newExpense = ExpenseInsert(expense: expense, uid: uid, category: category, expense_name: expenseName, created_at: createdAt)
     _ = try await supabase.database.from("User Expenses").insert(newExpense).execute()
 }
+
+func fetchDisplayName() async throws -> String? {
+    let session = try await supabase.auth.session
+    print("User metadata: \(session.user.userMetadata)")
+    
+    // Try different possible keys for display name
+    if let displayNameJSON = session.user.userMetadata["display_name"],
+       let displayName = (displayNameJSON as? CustomStringConvertible)?.description {
+        return displayName
+    }
+    
+    // Fallback: try other possible metadata keys
+    if let displayNameJSON = session.user.userMetadata["full_name"],
+       let displayName = (displayNameJSON as? CustomStringConvertible)?.description {
+        return displayName
+    }
+    
+    if let displayNameJSON = session.user.userMetadata["name"],
+       let displayName = (displayNameJSON as? CustomStringConvertible)?.description {
+        return displayName
+    }
+    
+    return nil
+}
+
+func updateDisplayName(newName: String) async throws {
+    let attributes = UserAttributes(data: ["display_name": .string(newName)])
+    _ = try await supabase.auth.update(user: attributes)
+}
+
+func signUpWithDisplayName(email: String, displayName: String) async throws {
+    try await supabase.auth.signInWithOTP(
+        email: email,
+        redirectTo: URL(string: "localhost:300"),
+        data: ["display_name": .string(displayName)]
+    )
+}

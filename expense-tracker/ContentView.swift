@@ -58,22 +58,13 @@ struct ContentView: View {
                         }
                         .tag(2)
                 }
-                .accentColor(tabAccentColor)
+                .accentColor(.primary)
             } else {
                 AuthView()
             }
         }
         .onOpenURL { url in
             Task { await authVM.handleOpenURL(url) }
-        }
-    }
-    
-    private var tabAccentColor: Color {
-        switch selectedTab {
-        case 0: return Color.purple // History theme
-        case 1: return Color.green  // Track theme
-        case 2: return Color.blue   // Settings theme
-        default: return Color.red
         }
     }
 }

@@ -8,6 +8,7 @@ struct TrackView: View {
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String? = nil
     @State private var todaysTotal: Double = 0.0
+    @State private var displayName: String? = nil
     @FocusState private var isInputFocused: Bool
 
     let categories: [(name: String, icon: String)] = [
@@ -21,20 +22,27 @@ struct TrackView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(gradient: Gradient(colors: [Color.green.opacity(0.2), Color.yellow.opacity(0.2)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color(.systemBackground)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 // Use a safe area inset for the header to avoid overlap with system status bar
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Track")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack {
+                        Text("Track")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if let displayName {
+                            Text(displayName)
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .padding(.top, 24)
                 .padding(.bottom, 8)
                 .padding(.horizontal)
-                .background(Color.white.opacity(0.01)) // invisible but helps with layout
                 ScrollView {
                     VStack(spacing: 28) {
                         // Motivational message and quick stats
@@ -42,10 +50,10 @@ struct TrackView: View {
                             Text("Great job! You're keeping track of your spending.")
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.green)
+                                .foregroundColor(.primary)
                             HStack {
                                 Image(systemName: "chart.bar.fill")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.secondary)
                                 Text("Today's total: $\(todaysTotal, specifier: "%.2f")")
                                     .font(.headline)
                                     .foregroundColor(.primary)
@@ -56,10 +64,15 @@ struct TrackView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Expense Name")
                                 .font(.headline)
+                                .foregroundColor(.primary)
                             TextField("Enter expense name", text: $expenseName)
                                 .padding()
-                                .background(Color.white.opacity(0.9))
+                                .background(Color(.secondarySystemBackground))
                                 .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
                                 .font(.body)
                                 .focused($isInputFocused)
                         }
@@ -67,11 +80,16 @@ struct TrackView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Amount")
                                 .font(.headline)
+                                .foregroundColor(.primary)
                             TextField("Enter amount", text: $expenseAmount)
                                 .keyboardType(.decimalPad)
                                 .padding()
-                                .background(Color.white.opacity(0.9))
+                                .background(Color(.secondarySystemBackground))
                                 .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
                                 .font(.body)
                                 .focused($isInputFocused)
                         }
@@ -79,9 +97,10 @@ struct TrackView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Category")
                                 .font(.headline)
+                                .foregroundColor(.primary)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 16) {
-                                    ForEach(categories, id: \ .name) { category in
+                                    ForEach(categories, id: \.name) { category in
                                         Button(action: {
                                             selectedCategory = category.name
                                         }) {
@@ -93,10 +112,14 @@ struct TrackView: View {
                                             }
                                             .padding(.vertical, 10)
                                             .padding(.horizontal, 20)
-                                            .background(selectedCategory == category.name ? Color.green : Color.white.opacity(0.9))
-                                            .foregroundColor(selectedCategory == category.name ? .white : .black)
+                                            .background(selectedCategory == category.name ? Color.primary : Color(.secondarySystemBackground))
+                                            .foregroundColor(selectedCategory == category.name ? Color(.systemBackground) : .primary)
                                             .cornerRadius(22)
-                                            .shadow(color: selectedCategory == category.name ? Color.green.opacity(0.2) : Color.clear, radius: 4, x: 0, y: 2)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 22)
+                                                    .stroke(selectedCategory == category.name ? Color.clear : Color(.systemGray4), lineWidth: 1)
+                                            )
+                                            .shadow(color: selectedCategory == category.name ? Color.primary.opacity(0.2) : Color.clear, radius: 4, x: 0, y: 2)
                                         }
                                     }
                                 }
@@ -105,7 +128,7 @@ struct TrackView: View {
                         Spacer(minLength: 80) // Space for the pinned button
                     }
                     .padding()
-                    .background(Color.white.opacity(0.25))
+                    .background(Color(.secondarySystemBackground).opacity(0.5))
                     .cornerRadius(28)
                     .padding()
                 }
@@ -144,10 +167,10 @@ struct TrackView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(isSubmitting ? Color.gray : Color.green)
-                        .foregroundColor(.white)
+                        .background(isSubmitting ? Color(.systemGray3) : Color.primary)
+                        .foregroundColor(Color(.systemBackground))
                         .cornerRadius(14)
-                        .shadow(color: Color.green.opacity(0.2), radius: 8, x: 0, y: 2)
+                        .shadow(color: Color.primary.opacity(0.2), radius: 8, x: 0, y: 2)
                     }
                     .disabled(isSubmitting)
                     .alert(isPresented: $showAlert) {
@@ -170,8 +193,9 @@ struct TrackView: View {
                     let total = try await fetchTodaysTotalExpense()
                     print("Today's total expense fetched on load:", total)
                     todaysTotal = total
+                    displayName = try await fetchDisplayName()
                 } catch {
-                    print("Error fetching today's total expense:", error)
+                    print("Error fetching today's total expense or display name:", error)
                 }
             }
         }
