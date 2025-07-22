@@ -9,6 +9,8 @@ struct TrackView: View {
     @State private var errorMessage: String? = nil
     @State private var todaysTotal: Double = 0.0
     @State private var displayName: String? = nil
+    @State private var selectedGroupId: String? = nil
+    @State private var groups: [Group] = []
     @FocusState private var isInputFocused: Bool
 
     let categories: [(name: String, icon: String)] = [
@@ -60,6 +62,58 @@ struct TrackView: View {
                             }
                         }
                         .padding(.bottom, 8)
+                        // Group Picker (updated to horizontal button group)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Expense For")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 16) {
+                                    Button(action: {
+                                        selectedGroupId = nil
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "person.fill")
+                                                .font(.body)
+                                            Text("Personal")
+                                                .font(.body)
+                                        }
+                                        .padding(.vertical, 10)
+                                        .padding(.horizontal, 20)
+                                        .background(selectedGroupId == nil ? Color.primary : Color(.secondarySystemBackground))
+                                        .foregroundColor(selectedGroupId == nil ? Color(.systemBackground) : .primary)
+                                        .cornerRadius(22)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 22)
+                                                .stroke(selectedGroupId == nil ? Color.clear : Color(.systemGray4), lineWidth: 1)
+                                        )
+                                        .shadow(color: selectedGroupId == nil ? Color.primary.opacity(0.2) : Color.clear, radius: 4, x: 0, y: 2)
+                                    }
+                                    ForEach(groups, id: \.id) { group in
+                                        Button(action: {
+                                            selectedGroupId = group.id
+                                        }) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "person.3.fill")
+                                                    .font(.body)
+                                                Text(group.name)
+                                                    .font(.body)
+                                            }
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal, 20)
+                                            .background(selectedGroupId == group.id ? Color.primary : Color(.secondarySystemBackground))
+                                            .foregroundColor(selectedGroupId == group.id ? Color(.systemBackground) : .primary)
+                                            .cornerRadius(22)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 22)
+                                                    .stroke(selectedGroupId == group.id ? Color.clear : Color(.systemGray4), lineWidth: 1)
+                                            )
+                                            .shadow(color: selectedGroupId == group.id ? Color.primary.opacity(0.2) : Color.clear, radius: 4, x: 0, y: 2)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         // Expense Name
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Expense Name")
@@ -148,7 +202,12 @@ struct TrackView: View {
                         isSubmitting = true
                         Task {
                             do {
-                                try await addUserExpense(expense: amount, category: selectedCategory, expenseName: expenseName)
+                                try await addUserExpense(
+                                    expense: Float(amount),
+                                    category: selectedCategory,
+                                    expenseName: expenseName,
+                                    groupId: selectedGroupId // <-- Pass groupId here
+                                )
                                 showAlert = true
                                 expenseName = ""
                                 expenseAmount = ""
@@ -191,11 +250,11 @@ struct TrackView: View {
             Task {
                 do {
                     let total = try await fetchTodaysTotalExpense()
-                    print("Today's total expense fetched on load:", total)
                     todaysTotal = total
                     displayName = try await fetchDisplayName()
+                    groups = try await fetchGroupsForUser()
                 } catch {
-                    print("Error fetching today's total expense or display name:", error)
+                    // Removed print statement
                 }
             }
         }

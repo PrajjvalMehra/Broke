@@ -29,6 +29,7 @@ struct HistoryView: View {
     @State private var showingDeleteAlert = false
     @State private var expenseToDelete: UserExpense?
     @State private var isDeleting: Bool = false
+    @State private var groupNames: [String: String] = [:] // group_id -> group name
     
     enum ViewType {
         case weekly
@@ -142,12 +143,29 @@ struct HistoryView: View {
         Task {
             do {
                 isLoading = true
-                expenses = try await fetchAllUserExpenses()
-                dailyTotals = groupExpensesByDay(expenses)
-                isLoading = false
+                let fetchedExpenses = try await fetchAllUserExpenses()
+                print("Fetched \(fetchedExpenses.count) expenses")
+                
+                // Fetch group names for all group_ids
+                let groupIds = Set(fetchedExpenses.compactMap { $0.group_id })
+                var names: [String: String] = [:]
+                for groupId in groupIds {
+                    if let name = try await fetchGroupName(groupId: groupId) {
+                        names[groupId] = name
+                    }
+                }
+                
+                await MainActor.run {
+                    expenses = fetchedExpenses
+                    groupNames = names
+                    dailyTotals = groupExpensesByDay(fetchedExpenses)
+                    isLoading = false
+                }
             } catch {
-                errorMessage = error.localizedDescription
-                isLoading = false
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
             }
         }
     }
@@ -174,33 +192,36 @@ struct HistoryView: View {
     private var filteredExpenses: [UserExpense] {
         let calendar = Calendar.current
         let now = Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        switch viewType {
-        case .weekly:
-            // Show expenses from the last 7 days (including today)
-            let startOfToday = calendar.startOfDay(for: now)
-            let weekAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday)!
-            return expenses.filter { exp in
-                if let date = ISO8601DateFormatter().date(from: exp.created_at) ?? formatter.date(from: exp.created_at) {
-                    let localDate = calendar.startOfDay(for: date)
-                    return localDate >= weekAgo && localDate <= startOfToday
-                }
-                return false
-            }
-        case .monthly:
-            // Show expenses from the last 12 months (including this month)
-            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-            let yearAgo = calendar.date(byAdding: .month, value: -11, to: startOfMonth)!
-            return expenses.filter { exp in
-                if let date = ISO8601DateFormatter().date(from: exp.created_at) ?? formatter.date(from: exp.created_at) {
-                    let localDate = calendar.startOfDay(for: date)
-                    return localDate >= yearAgo && localDate <= now
-                }
-                return false
+        
+        return expenses.filter { expense in
+            // Convert UTC string to local Date
+            guard let utcDate = convertUTCStringToLocalDate(expense.created_at) else { return false }
+            
+            switch viewType {
+            case .weekly:
+                let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: now))!
+                let endOfToday = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))!
+                return utcDate >= sevenDaysAgo && utcDate < endOfToday
+            case .monthly:
+                let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: now)!
+                return utcDate >= oneYearAgo && utcDate <= now
             }
         }
+    }
+    
+    // Helper function to convert UTC string to local Date
+    private func convertUTCStringToLocalDate(_ utcString: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: utcString)
+    }
+    
+    // Helper function to convert Date to local date string
+    private func localDateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: date)
     }
     
     var body: some View {
@@ -347,20 +368,30 @@ struct HistoryView: View {
                         ScrollView {
                             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                                 ForEach(
-                                    Dictionary(grouping: filteredExpenses, by: { String($0.created_at.prefix(10)) })
+                                    Dictionary(grouping: filteredExpenses, by: { expense in
+                                        if let localDate = convertUTCStringToLocalDate(expense.created_at) {
+                                            return localDateString(from: localDate)
+                                        } else {
+                                            return String(expense.created_at.prefix(10))
+                                        }
+                                    })
                                         .sorted(by: { $0.key > $1.key }),
                                     id: \.key
-                                ) { date, expensesForDate in
+                                )
+                                
+                                {
+                                    date, expensesForDate in
                                     Section {
                                         VStack(spacing: 0) {
-                                            ForEach(expensesForDate.indices, id: \.self) { index in
+                                            ForEach(expensesForDate.indices, id: \ .self) { index in
                                                 let expense = expensesForDate[index]
                                                 VStack(spacing: 0) {
+                                                    
                                                     HStack(spacing: 12) {
-                                                        Text("$\(expense.expense, specifier: "%.2f")")
-                                                            .font(.system(size: 16, weight: .bold))
+                                                        Text("$\(expense.expense, specifier: "%.2f")")                                                            .font(.system(size: 16, weight: .bold))
                                                             .foregroundColor(.primary)
-                                                        VStack(alignment: .leading, spacing: 2) {
+                                                        Spacer()
+                                                        VStack(alignment: .trailing, spacing: 2) {
                                                             Text(expense.expense_name)
                                                                 .font(.system(size: 15, weight: .semibold))
                                                                 .foregroundColor(.primary)
@@ -368,8 +399,17 @@ struct HistoryView: View {
                                                             Text(expense.category)
                                                                 .font(.system(size: 12))
                                                                 .foregroundColor(.secondary)
+                                                            if let groupId = expense.group_id, let groupName = groupNames[groupId] {
+                                                                Text("\(groupName)")
+                                                                    .font(.system(size: 12))
+                                                                    .foregroundColor(.blue)
+                                                            } else {
+                                                                Text("Personal")
+                                                                    .font(.system(size: 12))
+                                                                    .foregroundColor(.green)
+                                                            }
                                                         }
-                                                        Spacer()
+                                                        
                                                         
                                                         Menu {
                                                             Button(action: {
@@ -435,17 +475,7 @@ struct HistoryView: View {
             }
         }
         .onAppear {
-            Task {
-                do {
-                    isLoading = true
-                    expenses = try await fetchAllUserExpenses()
-                    dailyTotals = groupExpensesByDay(expenses)
-                    isLoading = false
-                } catch {
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                }
-            }
+            refreshData()
         }
         .sheet(item: $expenseToEdit) { expense in
             EditExpenseView(expense: expense) {

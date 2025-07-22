@@ -1,7 +1,6 @@
 import SwiftUI
 import Charts
 
-
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated: Bool = false
 
@@ -34,12 +33,20 @@ class AuthViewModel: ObservableObject {
     }
 }
 
+struct GroupsTabWrapper: View {
+    var body: some View {
+        NavigationView {
+            GroupsView()
+        }
+    }
+}
 
 struct ContentView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var selectedTab: Int = 0
+
     var body: some View {
-        Group {
+        ZStack {
             if authVM.isAuthenticated {
                 TabView(selection: $selectedTab) {
                     HistoryView()
@@ -48,15 +55,21 @@ struct ContentView: View {
                         }
                         .tag(0)
                     TrackView()
+                        .id(selectedTab == 1 ? UUID() : nil)
                         .tabItem {
                             Label("Track", systemImage: "plus.circle")
                         }
                         .tag(1)
+                    GroupsTabWrapper()
+                        .tabItem {
+                            Label("Groups", systemImage: "person.3.fill")
+                        }
+                        .tag(2)
                     SettingsView()
                         .tabItem {
                             Label("Settings", systemImage: "gear")
                         }
-                        .tag(2)
+                        .tag(3)
                 }
                 .accentColor(.primary)
             } else {

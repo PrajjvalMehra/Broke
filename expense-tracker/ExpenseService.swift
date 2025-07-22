@@ -1,9 +1,9 @@
 import Foundation
 
-func addUserExpense(expense: Double, category: String, expenseName: String) async throws {
+func addUserExpense(expense: Float, category: String, expenseName: String, groupId: String? = nil) async throws {
     let session = try await supabase.auth.session
     let uid = String(describing: session.user.id)
-    try await addExpense(expense: expense, uid: uid, category: category, expenseName: expenseName)
+    try await addExpense(expense: expense, uid: uid, category: category, expenseName: expenseName, groupId: groupId)
 }
 
 struct UserExpense: Decodable, Identifiable {
@@ -13,6 +13,7 @@ struct UserExpense: Decodable, Identifiable {
     let category: String
     let expense_name: String
     let created_at: String
+    let group_id: String?
 }
 
 struct ExpenseBasic: Decodable {
@@ -48,9 +49,7 @@ func updateUserExpense(id: Int, expense: Double, category: String, expenseName: 
             .eq("id", value: id)
             .eq("uid", value: uid)
             .execute()
-        print("✅ Expense updated: \(response)")
     } catch {
-        print("❌ Error updating expense: \(error)")
         throw error
     }
 }
@@ -62,22 +61,15 @@ func deleteUserExpense(id: Int) async throws {
             .delete()
             .eq("id", value: id)
             .execute()
-        print("Row deleted: \(response)")
     } catch {
-        print("Error deleting row: \(error)")
         throw error
     }
-}
-
-struct TodayExpense: Decodable {
-    let expense: Double
 }
 
 func fetchTodaysTotalExpense() async throws -> Double {
     let session = try await supabase.auth.session
     let uid = String(describing: session.user.id)
     let today = ISO8601DateFormatter().string(from: Calendar.current.startOfDay(for: Date()))
-    print(uid)
     let response: [TodayExpense] = try await supabase
         .from("User Expenses")
         .select("expense")
@@ -91,26 +83,23 @@ func fetchTodaysTotalExpense() async throws -> Double {
 }
 
 func fetchAllUserExpenses() async throws -> [UserExpense] {
-    print("📥 Fetching all user expenses...")
     do {
         let session = try await supabase.auth.session
         let uid = String(describing: session.user.id)
-        print("👤 User ID: \(uid)")
         let response: [UserExpense] = try await supabase
             .from("User Expenses")
-            .select("id,expense,uid,category,expense_name,created_at")
+            .select("id,expense,uid,category,expense_name,created_at,group_id")
             .eq("uid", value: uid)
             .order("created_at", ascending: false)
             .execute()
             .value
-        print("📊 Fetched \(response.count) expenses")
-        response.forEach { expense in
-            print("💰 ID: \(expense.id), Amount: $\(expense.expense), Name: \(expense.expense_name)")
+        print("Fetched \(response.count) expenses for user \(uid)")
+        for expense in response {
+            print("Expense ID: \(expense.id), Amount: \(expense.expense), Name: \(expense.expense_name), Category: \(expense.category), Created At: \(expense.created_at), Group ID: \(String(describing: expense.group_id))")
         }
+        
         return response
     } catch {
-        print("❌ Fetch failed with error: \(error)")
-        print("🔍 Error details: \(error.localizedDescription)")
         throw error
     }
 }

@@ -13,18 +13,36 @@ let supabase = SupabaseClient(
 )
 
 struct ExpenseInsert: Codable {
-    let expense: Double
+    let expense: Float
     let uid: String
     let category: String
     let expense_name: String
     let created_at: String?
+    let group_id: String?
 }
 
-func addExpense(expense: Double, uid: String, category: String, expenseName: String, createdAt: String? = nil) async throws {
-    let newExpense = ExpenseInsert(expense: expense, uid: uid, category: category, expense_name: expenseName, created_at: createdAt)
-    _ = try await supabase.database.from("User Expenses").insert(newExpense).execute()
+func addExpense(
+    expense: Float,
+    uid: String,
+    category: String,
+    expenseName: String,
+    groupId: String? = nil,
+    createdAt: String? = nil
+) async throws {
+    let newExpense = ExpenseInsert(
+        expense: expense,
+        uid: uid,
+        category: category,
+        expense_name: expenseName,
+        created_at: createdAt,
+        group_id: groupId
+    )
+    _ = try await supabase
+        .database
+        .from("User Expenses")
+        .insert(newExpense)
+        .execute()
 }
-
 func fetchDisplayName() async throws -> String? {
     let session = try await supabase.auth.session
     print("User metadata: \(session.user.userMetadata)")

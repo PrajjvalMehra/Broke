@@ -29,7 +29,6 @@ struct AuthView: View {
                     try await supabase.auth.session(from: url)
                     await authVM.checkAuth()
                 } catch {
-                    print("Error handling URL: \(error)")
                 }
             }
         }
